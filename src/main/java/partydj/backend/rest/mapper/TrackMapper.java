@@ -4,6 +4,7 @@ import com.google.api.services.youtube.model.SearchResult;
 import com.google.api.services.youtube.model.Video;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.HtmlUtils;
 import partydj.backend.rest.entity.*;
 import partydj.backend.rest.entity.enums.PlatformType;
 import partydj.backend.rest.entity.response.PreviousTrackResponse;
@@ -72,12 +73,12 @@ public class TrackMapper {
 
     public TrackSearchResultResponse mapYouTubeVideoToTrackSearchResultResponse(final SearchResult video) {
         return TrackSearchResultResponse.builder()
-                .title(video.getSnippet().getTitle())
+                .title(HtmlUtils.htmlUnescape(video.getSnippet().getTitle()))
                 .artists(new HashSet<>(Collections.singletonList(artistMapper.mapYouTubeSearchResultToArtistResponse(video))))
-                .coverUri(video.getSnippet().getThumbnails().getHigh().getUrl())
+                .coverUri(HtmlUtils.htmlUnescape(video.getSnippet().getThumbnails().getHigh().getUrl()))
                 .length(0) // TODO: get this data
                 .platformType(PlatformType.YOUTUBE)
-                .uri(video.getId().getVideoId())
+                .uri(HtmlUtils.htmlUnescape(video.getId().getVideoId()))
                 .build();
     }
 

@@ -2,6 +2,7 @@ package partydj.backend.rest.mapper;
 
 import com.google.api.services.youtube.model.SearchResult;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.HtmlUtils;
 import partydj.backend.rest.entity.Artist;
 import partydj.backend.rest.entity.response.ArtistResponse;
 import se.michaelthelin.spotify.model_objects.specification.ArtistSimplified;
@@ -23,7 +24,7 @@ public class ArtistMapper {
 
     public ArtistResponse mapYouTubeSearchResultToArtistResponse(final SearchResult searchResult) {
         return ArtistResponse.builder()
-                .name(searchResult.getSnippet().getChannelTitle())
+                .name(HtmlUtils.htmlUnescape(searchResult.getSnippet().getChannelTitle()))
                 .build();
     }
 }
