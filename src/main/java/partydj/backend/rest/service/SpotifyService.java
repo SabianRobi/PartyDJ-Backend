@@ -126,7 +126,7 @@ public class SpotifyService {
         try {
             trackPaging = searchTracksRequest.execute();
         } catch (IOException | SpotifyWebApiException | ParseException e) {
-            throw new ThirdPartyApiException("Failed to search tracks: " + e.getMessage());
+            throw new ThirdPartyApiException("Failed to search tracks on Spotify: " + e.getMessage());
         }
 
         return Arrays.stream(trackPaging.getItems()).map(track ->
@@ -143,7 +143,7 @@ public class SpotifyService {
         try {
             spotifyTrack = getTrackRequest.execute();
         } catch (IOException | SpotifyWebApiException | ParseException e) {
-            throw new ThirdPartyApiException("Failed to fetch track infos: " + e.getMessage());
+            throw new ThirdPartyApiException("Failed to fetch track infos on Spotify: " + e.getMessage());
         }
 
         HashSet<Artist> artists = saveArtists(
@@ -174,7 +174,7 @@ public class SpotifyService {
         try {
             startResumeUsersPlaybackRequest.execute();
         } catch (IOException | SpotifyWebApiException | ParseException e) {
-            throw new ThirdPartyApiException("Could not play next track: " + e.getMessage());
+            throw new ThirdPartyApiException("Could not play next track on Spotify: " + e.getMessage());
         }
     }
 

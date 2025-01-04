@@ -149,7 +149,6 @@ public class PartyService {
         final Party party = findByName(partyName);
 
         return partyMapper.mapPartyToPartyResponse(party);
-
     }
 
     public PartyResponse join(final User loggedInUser, final PartyRequest joinRequest) {

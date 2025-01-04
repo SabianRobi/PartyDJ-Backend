@@ -55,7 +55,7 @@ public class GoogleService {
                 .setScopes(scopes)
                 .build();
         } catch (URISyntaxException error) {
-            throw new ThirdPartyApiException("Invalid redirect uri: " + error);
+            throw new ThirdPartyApiException("Failed to initialize Google: " + error);
         }
     }
 
