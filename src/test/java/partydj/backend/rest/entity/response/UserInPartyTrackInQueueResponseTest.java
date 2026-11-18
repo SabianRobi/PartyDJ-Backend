@@ -9,6 +9,7 @@ import java.io.File;
 import java.nio.file.Files;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static partydj.backend.rest.helper.JsonTestUtils.assertJsonEquals;
 
 public class UserInPartyTrackInQueueResponseTest {
     private final UserInPartyTrackInQueueResponse userInPartyTrackInQueueResponse;
@@ -31,7 +32,7 @@ public class UserInPartyTrackInQueueResponseTest {
         final File jsonFile = ResourceUtils.getFile(path);
         final String expected = Files.readString(jsonFile.toPath());
 
-        assertThat(actual).isEqualTo(expected);
+        assertJsonEquals(actual, expected);
     }
 
     @Test

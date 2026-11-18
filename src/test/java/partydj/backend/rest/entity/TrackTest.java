@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.util.HashSet;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static partydj.backend.rest.helper.JsonTestUtils.assertJsonEquals;
 
 public class TrackTest {
     private final Track track;
@@ -41,7 +42,7 @@ public class TrackTest {
         final File jsonFile = ResourceUtils.getFile(path);
         final String expected = Files.readString(jsonFile.toPath());
 
-        assertThat(actual).isEqualTo(expected);
+        assertJsonEquals(actual, expected);
     }
 
     @Test

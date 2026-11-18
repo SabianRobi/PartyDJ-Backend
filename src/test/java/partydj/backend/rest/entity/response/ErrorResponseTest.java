@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static partydj.backend.rest.helper.JsonTestUtils.assertJsonEquals;
 
 public class ErrorResponseTest {
     private final ErrorResponse errorResponse;
@@ -42,7 +43,7 @@ public class ErrorResponseTest {
         final File jsonFile = ResourceUtils.getFile(path);
         final String expected = Files.readString(jsonFile.toPath());
 
-        assertThat(actual).isEqualTo(expected);
+        assertJsonEquals(actual, expected);
     }
 
     @Test

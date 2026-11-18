@@ -13,6 +13,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static partydj.backend.rest.helper.DataGenerator.*;
+import static partydj.backend.rest.helper.JsonTestUtils.assertJsonEquals;
 
 public class PartyTest {
     private final Party party;
@@ -42,7 +43,7 @@ public class PartyTest {
         final File jsonFile = ResourceUtils.getFile(path);
         final String expected = Files.readString(jsonFile.toPath());
 
-        assertThat(actual).isEqualTo(expected);
+        assertJsonEquals(actual, expected);
     }
 
     @Test

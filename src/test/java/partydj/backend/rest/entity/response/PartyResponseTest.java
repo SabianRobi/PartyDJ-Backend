@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static partydj.backend.rest.helper.JsonTestUtils.assertJsonEquals;
 
 public class PartyResponseTest {
     private final PartyResponse partyResponse;
@@ -42,7 +43,7 @@ public class PartyResponseTest {
         final File jsonFile = ResourceUtils.getFile(path);
         final String expected = Files.readString(jsonFile.toPath());
 
-        assertThat(actual).isEqualTo(expected);
+        assertJsonEquals(actual, expected);
     }
 
     @Test

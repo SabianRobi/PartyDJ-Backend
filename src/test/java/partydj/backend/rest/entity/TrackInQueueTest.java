@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.util.HashSet;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static partydj.backend.rest.helper.JsonTestUtils.assertJsonEquals;
 
 public class TrackInQueueTest {
     private final TrackInQueue track;
@@ -43,7 +44,7 @@ public class TrackInQueueTest {
         final File jsonFile = ResourceUtils.getFile(path);
         final String expected = Files.readString(jsonFile.toPath());
 
-        assertThat(actual).isEqualTo(expected);
+        assertJsonEquals(actual, expected);
     }
 
     @Test
