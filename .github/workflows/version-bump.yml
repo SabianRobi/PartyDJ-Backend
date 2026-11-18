@@ -1,0 +1,122 @@
+name: Bump Version
+
+on:
+  workflow_run:
+    workflows: [ "Build & Test" ]
+    types: [ completed ]
+    branches: [ "main" ]
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  bump-version:
+    if: github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require successful build and tests
+        if: github.event.workflow_run.conclusion != 'success'
+        run: |
+          echo "::error::Build & Test did not succeed; version bump and release are blocked."
+          exit 1
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - name: Download pushed commit messages
+        uses: actions/download-artifact@v4
+        with:
+          name: push-commit-messages
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Calculate semantic version
+        id: version
+        run: |
+          python3 <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          pom_path = Path("pom.xml")
+          pom = pom_path.read_text()
+          match = re.search(
+              r"(<artifactId>PartyDJ</artifactId>\s*<version>)([^<]+)(</version>)",
+              pom,
+          )
+          if match is None:
+              raise SystemExit("Could not find the PartyDJ project version in pom.xml")
+
+          current = match.group(2).strip().removeprefix("v")
+          version_match = re.fullmatch(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)", current)
+          if version_match is None:
+              raise SystemExit(f"Unsupported project version: {current}")
+          major, minor, patch = map(int, version_match.groups())
+
+          bump_levels = {"none": 0, "patch": 1, "minor": 2, "major": 3}
+          bump = "none"
+          commits = json.loads(Path("commit-messages.json").read_text())
+          for commit in commits:
+              message = commit.get("message", "")
+              header = message.splitlines()[0] if message else ""
+              conventional = re.match(
+                  r"^(?P<type>[a-zA-Z][\w-]*)(?:\([^)\r\n]+\))?(?P<breaking>!)?:",
+                  header,
+              )
+              level = "none"
+              if re.search(r"BREAKING[- ]CHANGE:", message, re.IGNORECASE) or (
+                  conventional and conventional.group("breaking")
+              ):
+                  level = "major"
+              elif conventional:
+                  commit_type = conventional.group("type").lower()
+                  if commit_type in {"feat", "minor"}:
+                      level = "minor"
+                  elif commit_type in {"fix", "perf", "revert", "patch"}:
+                      level = "patch"
+                  elif commit_type == "major":
+                      level = "major"
+              if bump_levels[level] > bump_levels[bump]:
+                  bump = level
+
+          if bump == "major":
+              major, minor, patch = major + 1, 0, 0
+          elif bump == "minor":
+              minor, patch = minor + 1, 0
+          elif bump == "patch":
+              patch += 1
+
+          semver = f"{major}.{minor}.{patch}"
+          if bump != "none":
+              pom_path.write_text(pom[:match.start(2)] + semver + pom[match.end(2):])
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"version=v{semver}\n")
+              output.write(f"should_release={'true' if bump != 'none' else 'false'}\n")
+          PY
+      - name: Commit version update
+        if: steps.version.outputs.should_release == 'true'
+        env:
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pom.xml
+          git commit -m "chore(release): ${VERSION} [skip ci]"
+          git tag -a "${VERSION}" -m "Release ${VERSION}"
+          git push origin "HEAD:${BRANCH}"
+          git push origin "${VERSION}"
+      - name: Prepare release metadata
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          SHOULD_RELEASE: ${{ steps.version.outputs.should_release }}
+        run: |
+          printf 'version=%s\nshould_release=%s\ncommit_sha=%s\n' \
+            "$VERSION" "$SHOULD_RELEASE" "$(git rev-parse HEAD)" > release-metadata.txt
+      - name: Upload release metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-metadata
+          path: release-metadata.txt
+          if-no-files-found: error

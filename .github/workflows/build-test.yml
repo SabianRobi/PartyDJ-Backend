@@ -1,0 +1,60 @@
+# Build and test every push, and also validate pull requests targeting main.
+name: Build & Test
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+      - name: Build application
+        run: mvn -B -DskipTests package --file pom.xml
+      - name: Upload application artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: partydj-jar
+          path: target/partydj.jar
+          if-no-files-found: error
+      - name: Save pushed commit messages
+        if: github.event_name == 'push'
+        env:
+          PUSH_COMMITS: ${{ toJSON(github.event.commits) }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          Path("commit-messages.json").write_text(os.environ["PUSH_COMMITS"])
+          PY
+      - name: Upload pushed commit messages
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: push-commit-messages
+          path: commit-messages.json
+          if-no-files-found: error
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+      - name: Run tests
+        run: mvn -B test --file pom.xml
