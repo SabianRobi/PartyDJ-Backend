@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.partydj</groupId>
     <artifactId>PartyDJ</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
     <name>PartyDJ</name>
     <description>PartyDJ</description>
     <properties>
