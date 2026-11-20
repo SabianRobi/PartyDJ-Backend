@@ -13,26 +13,27 @@ permissions:
 jobs:
   check-version:
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success'
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      startsWith(github.event.workflow_run.head_commit.message, 'chore(release): v')
     outputs:
       changed: ${{ steps.version.outputs.changed }}
       version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.workflow_run.head_branch }}
+          ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
 
       - name: Check whether the version changed
         id: version
         env:
-          BASE_SHA: ${{ github.event.workflow_run.head_sha }}
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           python3 <<'PY'
           import os
           import subprocess
           import xml.etree.ElementTree as ET
-          from pathlib import Path
 
           def project_version(pom):
               root = ET.fromstring(pom)
@@ -41,14 +42,21 @@ jobs:
                   raise SystemExit("Could not find the project version in pom.xml")
               return version.text.strip()
 
+          release_sha = os.environ["RELEASE_SHA"]
           previous_pom = subprocess.run(
-              ["git", "show", f"{os.environ['BASE_SHA']}:pom.xml"],
+              ["git", "show", f"{release_sha}^:pom.xml"],
+              check=True,
+              capture_output=True,
+              text=True,
+          ).stdout
+          release_pom = subprocess.run(
+              ["git", "show", f"{release_sha}:pom.xml"],
               check=True,
               capture_output=True,
               text=True,
           ).stdout
           previous_version = project_version(previous_pom)
-          current_version = project_version(Path("pom.xml").read_text())
+          current_version = project_version(release_pom)
 
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:
               output.write(f"version={current_version}\n")
