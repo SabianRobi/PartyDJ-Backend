@@ -59,7 +59,8 @@ public class SecurityConfig {
                 .requestMatchers(
                     pathMatcher.matcher(HttpMethod.POST, "/api/v1/user"),
                     pathMatcher.matcher(HttpMethod.POST, "/api/v1/user/me"),
-                    pathMatcher.matcher(HttpMethod.GET, "/api/v1/platforms/spotify/callback/**")
+                    pathMatcher.matcher(HttpMethod.GET, "/api/v1/platforms/spotify/callback/**"),
+                    pathMatcher.matcher(HttpMethod.GET, "/api/v1/actuator/**")
                 ).permitAll()
                 .requestMatchers(
                     pathMatcher.matcher("/api/v1/user/**"),
