@@ -13,17 +13,18 @@ permissions:
 jobs:
   bump-version:
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
+    if: github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success'
     steps:
       - uses: actions/checkout@v5
         with:
+          ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Determine new version
         id: version
         env:
-          PUSH_COMMITS: ${{ toJSON(github.event.commits) }}
+          PUSH_COMMITS: ${{ toJSON(github.event.workflow_run.head_commit) }}
         run: |
           python3 << 'EOF'
           import json
@@ -49,6 +50,11 @@ jobs:
           bump_levels = {"none": 0, "patch": 1, "minor": 2, "major": 3}
           bump = "none"
           commits = json.loads(os.environ["PUSH_COMMITS"])
+          if isinstance(commits, dict):
+              commits = [commits]
+          if not isinstance(commits, list):
+              raise SystemExit("workflow_run.head_commit did not contain commit metadata")
+
           for commit in commits:
               message = commit.get("message", "")
               header = message.splitlines()[0] if message else ""
@@ -82,19 +88,22 @@ jobs:
           new_version = f"{major}.{minor}.{patch}"
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"new_version={new_version}\n")
+              f.write(f"should_bump={'true' if bump != 'none' else 'false'}\n")
           EOF
 
       - name: Update pom.xml
+        if: steps.version.outputs.should_bump == 'true'
         run: |
           # Find the version line after PartyDJ artifactId and replace it
           sed -i '/<artifactId>PartyDJ<\/artifactId>/,/<\/artifactId>/{s/<version>[^<]*<\/version>/<version>${{ steps.version.outputs.new_version }}<\/version>/;}' pom.xml
 
       - name: Commit, Tag and Push Changes
+        if: steps.version.outputs.should_bump == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add pom.xml
           git commit -m "chore(release): v${{ steps.version.outputs.new_version }}"
           git tag -a "v${{ steps.version.outputs.new_version }}" -m "Release v${{ steps.version.outputs.new_version }}"
-          git push origin HEAD:${{ github.ref_name }}
+          git push origin HEAD:${{ github.event.workflow_run.head_branch }}
           git push origin "v${{ steps.version.outputs.new_version }}"
