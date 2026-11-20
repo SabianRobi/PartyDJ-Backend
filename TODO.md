@@ -77,5 +77,3 @@ Auth required for every endpoint
 * Introduce ModelMapper instead of creating them manually
 * Send normalized error message paths to frontend
   * (ie. "updateDetails.<cross-parameter>" -> "general"; in updatePassword constraint)
-
-  
