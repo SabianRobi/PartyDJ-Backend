@@ -75,7 +75,6 @@ Auth required for every endpoint
 * Add readme (introduction, configuring, running)
 * Make documentation
 * Introduce ModelMapper instead of creating them manually
-* Create liveness endpoint
 * Send normalized error message paths to frontend
   * (ie. "updateDetails.<cross-parameter>" -> "general"; in updatePassword constraint)
 
