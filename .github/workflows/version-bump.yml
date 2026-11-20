@@ -12,27 +12,20 @@ permissions:
 
 jobs:
   bump-version:
-    if: github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
     steps:
-      - name: Require successful build and tests
-        if: github.event.workflow_run.conclusion != 'success'
-        run: |
-          echo "::error::Build & Test did not succeed; version bump and release are blocked."
-          exit 1
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-      - name: Download pushed commit messages
-        uses: actions/download-artifact@v4
-        with:
-          name: push-commit-messages
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Calculate semantic version
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine new version
         id: version
+        env:
+          PUSH_COMMITS: ${{ toJSON(github.event.commits) }}
         run: |
-          python3 <<'PY'
+          python3 << 'EOF'
           import json
           import os
           import re
@@ -55,7 +48,7 @@ jobs:
 
           bump_levels = {"none": 0, "patch": 1, "minor": 2, "major": 3}
           bump = "none"
-          commits = json.loads(Path("commit-messages.json").read_text())
+          commits = json.loads(os.environ["PUSH_COMMITS"])
           for commit in commits:
               message = commit.get("message", "")
               header = message.splitlines()[0] if message else ""
@@ -86,37 +79,22 @@ jobs:
           elif bump == "patch":
               patch += 1
 
-          semver = f"{major}.{minor}.{patch}"
-          if bump != "none":
-              pom_path.write_text(pom[:match.start(2)] + semver + pom[match.end(2):])
+          new_version = f"{major}.{minor}.{patch}"
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"new_version={new_version}\n")
+          EOF
 
-          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
-              output.write(f"version=v{semver}\n")
-              output.write(f"should_release={'true' if bump != 'none' else 'false'}\n")
-          PY
-      - name: Commit version update
-        if: steps.version.outputs.should_release == 'true'
-        env:
-          BRANCH: ${{ github.event.workflow_run.head_branch }}
-          VERSION: ${{ steps.version.outputs.version }}
+      - name: Update pom.xml
+        run: |
+          # Find the version line after PartyDJ artifactId and replace it
+          sed -i '/<artifactId>PartyDJ<\/artifactId>/,/<\/artifactId>/{s/<version>[^<]*<\/version>/<version>${{ steps.version.outputs.new_version }}<\/version>/;}' pom.xml
+
+      - name: Commit, Tag and Push Changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add pom.xml
-          git commit -m "chore(release): ${VERSION} [skip ci]"
-          git tag -a "${VERSION}" -m "Release ${VERSION}"
-          git push origin "HEAD:${BRANCH}"
-          git push origin "${VERSION}"
-      - name: Prepare release metadata
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-          SHOULD_RELEASE: ${{ steps.version.outputs.should_release }}
-        run: |
-          printf 'version=%s\nshould_release=%s\ncommit_sha=%s\n' \
-            "$VERSION" "$SHOULD_RELEASE" "$(git rev-parse HEAD)" > release-metadata.txt
-      - name: Upload release metadata
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-metadata
-          path: release-metadata.txt
-          if-no-files-found: error
+          git commit -m "chore(release): v${{ steps.version.outputs.new_version }}"
+          git tag -a "v${{ steps.version.outputs.new_version }}" -m "Release v${{ steps.version.outputs.new_version }}"
+          git push origin HEAD:${{ github.ref_name }}
+          git push origin "v${{ steps.version.outputs.new_version }}"
