@@ -14,7 +14,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -52,17 +52,19 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
+        final PathPatternRequestMatcher.Builder pathMatcher = PathPatternRequestMatcher.withDefaults();
+
         http
             .authorizeHttpRequests((requests) -> requests
                 .requestMatchers(
-                    AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/v1/user"),
-                    AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/v1/user/me"),
-                    AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/api/v1/platforms/spotify/callback/**")
+                    pathMatcher.matcher(HttpMethod.POST, "/api/v1/user"),
+                    pathMatcher.matcher(HttpMethod.POST, "/api/v1/user/me"),
+                    pathMatcher.matcher(HttpMethod.GET, "/api/v1/platforms/spotify/callback/**")
                 ).permitAll()
                 .requestMatchers(
-                    new AntPathRequestMatcher("/api/v1/user/**"),
-                    new AntPathRequestMatcher("/api/v1/party/**"),
-                    new AntPathRequestMatcher("/api/v1/platforms/**")
+                    pathMatcher.matcher("/api/v1/user/**"),
+                    pathMatcher.matcher("/api/v1/party/**"),
+                    pathMatcher.matcher("/api/v1/platforms/**")
                 ).hasRole("NORMAL")
                 .anyRequest().authenticated()
             )
