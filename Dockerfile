@@ -1,4 +1,4 @@
 FROM eclipse-temurin:17-jre-jammy
 VOLUME /tmp
-COPY target/partydj.jar partydj.jar
-ENTRYPOINT ["java","-jar","/partydj.jar"]
+COPY target/PartyDJ-Backend.jar PartyDJ-Backend.jar
+ENTRYPOINT ["java","-jar","/PartyDJ-Backend.jar"]

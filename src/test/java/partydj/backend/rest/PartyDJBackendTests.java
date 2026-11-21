@@ -6,7 +6,7 @@ import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest
 @TestPropertySource(locations = "classpath:application-test.properties")
-class PartyDjApplicationTests {
+class PartyDJBackendTests {
 
     @Test
     void contextLoads() {

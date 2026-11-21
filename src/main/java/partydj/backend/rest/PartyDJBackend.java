@@ -4,8 +4,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class PartyDjApplication {
+public class PartyDJBackend {
     public static void main(String[] args) {
-        SpringApplication.run(PartyDjApplication.class, args);
+        SpringApplication.run(PartyDJBackend.class, args);
     }
 }
