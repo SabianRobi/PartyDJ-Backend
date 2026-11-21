@@ -96,5 +96,5 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            sabianrobi/partydj:latest
-            sabianrobi/partydj:${{ needs.check-version.outputs.version }}
+            sabianrobi/partydj-backend:latest
+            sabianrobi/partydj-backend:${{ needs.check-version.outputs.version }}
