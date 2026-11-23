@@ -22,7 +22,6 @@ import partydj.backend.rest.service.UserService;
 import partydj.backend.rest.validation.constraint.Name;
 
 @RestController
-@CrossOrigin("http://localhost:3000/")
 @RequestMapping(value = "/api/v1/user", produces = "application/json")
 public class UserController {
 

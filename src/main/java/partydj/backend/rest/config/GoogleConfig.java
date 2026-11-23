@@ -12,6 +12,7 @@ public class GoogleConfig {
     private String clientId;
     private String clientSecret;
     private String redirectUri;
+    private String scopes;
 
     @Bean
     @ConfigurationProperties(prefix = "app.platforms.google")

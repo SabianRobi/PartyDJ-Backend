@@ -5,6 +5,7 @@ import com.google.auth.oauth2.ClientId;
 import com.google.auth.oauth2.UserAuthorizer;
 import com.google.auth.oauth2.UserCredentials;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import partydj.backend.rest.entity.GoogleCredential;
@@ -18,7 +19,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 
 @Service
@@ -34,25 +35,22 @@ public class GoogleService {
     @Autowired
     private Map<String, String> googleConfigs;
 
-    private static final URI BASE_URL = URI.create("localhost:3000");
+    @Value("${app.frontend.url}")
+    private URI frontendUrl;
 
     private final UserAuthorizer userAuthorizer;
 
     @Autowired
-    public GoogleService(final Map<String, String> googleConfigs) {
-        final ArrayList<String> scopes = new ArrayList<>();
-        scopes.add("https://www.googleapis.com/auth/userinfo.email");
-        scopes.add("https://www.googleapis.com/auth/userinfo.profile");
-        scopes.add("https://www.googleapis.com/auth/youtube.readonly");
-        scopes.add("openid");
-
+    public GoogleService(
+            final Map<String, String> googleConfigs
+    ) {
         final ClientId clientId = ClientId.of(googleConfigs.get("client-id"), googleConfigs.get("client-secret"));
 
         try {
             userAuthorizer = UserAuthorizer.newBuilder()
                 .setClientId(clientId)
                 .setCallbackUri(new URI(googleConfigs.get("redirect-uri")))
-                .setScopes(scopes)
+                .setScopes(Arrays.stream(googleConfigs.get("scopes").split(",")).toList())
                 .build();
         } catch (URISyntaxException error) {
             throw new ThirdPartyApiException("Failed to initialize Google: " + error);
@@ -63,7 +61,7 @@ public class GoogleService {
         final URL url = userAuthorizer.getAuthorizationUrl(
                 String.valueOf(user.getId()),
                 state,
-                BASE_URL
+                frontendUrl
         );
 
         return new PlatformLoginUriResponse(url.toString());
